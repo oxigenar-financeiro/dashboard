@@ -2,44 +2,55 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OXIGENAR — Dashboard de Resultados 2026</title>
+<title>Dashboard Oxigenar</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 
 <body>
+<h2>Dashboard (Teste de Dados)</h2>
+<pre id="output">Carregando...</pre>
 
 <script>
 let RAW_DATA = [];
 
-// 🔥 FUNÇÃO PRA CONVERTER NÚMERO BR
+// 🔥 remove acento, espaço, etc
+function normalizar(texto) {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "_")
+    .trim();
+}
+
+// 🔥 converte número brasileiro
 function toNumber(valor) {
   if (!valor) return 0;
   return Number(
     valor
-      .replace(/\./g, '')   // remove milhar
-      .replace(',', '.')    // decimal
+      .replace(/\./g, '')
+      .replace(',', '.')
   ) || 0;
 }
 
-// 🔥 CARREGAR DADOS DO GOOGLE SHEETS
 async function carregarDados() {
 
-const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSFCQ6eYfaCBWKUp4kJ5x5W4r9Zcm8g1QY7YwhZZR9NglDsqieTEIAiIleRFLYFB8SwksAGnWIt5Pye/pub?output=csv";
+const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSFCQ6eYfaCBWKUp4kJ5x5W4r9Zcm8g1QY7YwhZZR9NglDsqieTEIAiIleRFLYFB8SwksAGnWIt5Pye/pub?output=csv&t=" + new Date().getTime();
 
   const res = await fetch(url);
   const text = await res.text();
 
-  // ⚠️ AQUI ESTAVA O ERRO (agora com ;)
-  const linhas = text.split("\n").map(l => l.split(";"));
+  // 🔥 suporta quebra de linha correta + separador brasileiro
+  const linhas = text.split(/\r?\n/).map(l => l.split(";"));
 
   const headers = linhas[0];
   const rows = linhas.slice(1);
 
   RAW_DATA = rows.map(r => {
     let obj = {};
+
     headers.forEach((h, i) => {
-      obj[h.trim()] = r[i];
+      obj[normalizar(h)] = r[i];
     });
 
     return {
@@ -54,10 +65,10 @@ const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSFCQ6eYfaCBWKUp4kJ
     };
   });
 
-  console.log("DADOS CARREGADOS:", RAW_DATA);
+  console.log("DADOS:", RAW_DATA);
 
-  // TESTE SIMPLES
-  document.body.innerHTML = "<pre>" + JSON.stringify(RAW_DATA, null, 2) + "</pre>";
+  document.getElementById("output").textContent =
+    JSON.stringify(RAW_DATA, null, 2);
 }
 
 carregarDados();
