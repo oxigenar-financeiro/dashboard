@@ -1,19 +1,8 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<title>Dashboard Oxigenar</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-</head>
-
-<body>
-<h2>Dashboard (Teste de Dados)</h2>
-<pre id="output">Carregando...</pre>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
 <script>
 let RAW_DATA = [];
 
-// 🔥 remove acento, espaço, etc
 function normalizar(texto) {
   return texto
     .toLowerCase()
@@ -23,11 +12,11 @@ function normalizar(texto) {
     .trim();
 }
 
-// 🔥 converte número brasileiro
 function toNumber(valor) {
   if (!valor) return 0;
   return Number(
     valor
+      .replace(/R\$\s?/g, '')
       .replace(/\./g, '')
       .replace(',', '.')
   ) || 0;
@@ -38,41 +27,39 @@ async function carregarDados() {
 const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSFCQ6eYfaCBWKUp4kJ5x5W4r9Zcm8g1QY7YwhZZR9NglDsqieTEIAiIleRFLYFB8SwksAGnWIt5Pye/pub?output=csv&t=" + new Date().getTime();
 
   const res = await fetch(url);
-  const text = await res.text();
+  const csv = await res.text();
 
-  // 🔥 suporta quebra de linha correta + separador brasileiro
-  const linhas = text.split(/\r?\n/).map(l => l.split(";"));
+  Papa.parse(csv, {
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
 
-  const headers = linhas[0];
-  const rows = linhas.slice(1);
+      RAW_DATA = results.data.map(row => {
+        let obj = {};
 
-  RAW_DATA = rows.map(r => {
-    let obj = {};
+        Object.keys(row).forEach(key => {
+          obj[normalizar(key)] = row[key];
+        });
 
-    headers.forEach((h, i) => {
-      obj[normalizar(h)] = r[i];
-    });
+        return {
+          mes: obj.mes,
+          loja: obj.loja,
+          vendas_acessorios: toNumber(obj.vendas_acessorios),
+          vendas_equipamentos: toNumber(obj.vendas_equipamentos),
+          locacoes: toNumber(obj.locacoes),
+          locacoes_cpap: toNumber(obj.locacoes_cpap),
+          total: toNumber(obj.total),
+          meta: obj.meta ? toNumber(obj.meta) : null
+        };
+      });
 
-    return {
-      mes: obj.mes,
-      loja: obj.loja,
-      vendas_acessorios: toNumber(obj.vendas_acessorios),
-      vendas_equipamentos: toNumber(obj.vendas_equipamentos),
-      locacoes: toNumber(obj.locacoes),
-      locacoes_cpap: toNumber(obj.locacoes_cpap),
-      total: toNumber(obj.total),
-      meta: obj.meta ? toNumber(obj.meta) : null
-    };
+      console.log("DADOS CERTOS:", RAW_DATA);
+
+      document.body.innerHTML =
+        "<pre>" + JSON.stringify(RAW_DATA, null, 2) + "</pre>";
+    }
   });
-
-  console.log("DADOS:", RAW_DATA);
-
-  document.getElementById("output").textContent =
-    JSON.stringify(RAW_DATA, null, 2);
 }
 
 carregarDados();
 </script>
-
-</body>
-</html>
