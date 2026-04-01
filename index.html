@@ -376,7 +376,7 @@ const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSFCQ6eYfaCBWKUp4kJ
     return {
       mes: obj.mes,
       loja: obj.loja,
-      vendas_acessorios: Number(obj.vendas_acessorios) || 0,
+      function parseNumero(valor) {   if (!valor) return 0;    return Number(     valor       .replace(/R\$\s?/g, '') // remove R$       .replace(/\./g, '')     // remove separador de milhar       .replace(',', '.')      // troca vírgula por ponto       .trim()   ) || 0; }
       vendas_equipamentos: Number(obj.vendas_equipamentos) || 0,
       locacoes: Number(obj.locacoes) || 0,
       locacoes_cpap: Number(obj.locacoes_cpap) || 0,
